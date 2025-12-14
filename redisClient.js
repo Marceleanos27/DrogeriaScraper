@@ -50,9 +50,6 @@ export async function saveProductsToRedis(products) {
         
         await redis.set(key, JSON.stringify(productData));
         
-        // Also add to a set for easy retrieval of all product IDs
-        await redis.sadd('products:all_ids', productId);
-        
         return productId;
       });
       
@@ -76,31 +73,6 @@ export async function saveProductsToRedis(products) {
 }
 
 /**
- * Gets all products from Redis
- * @returns {Promise<Array>} Array of all products
- */
-export async function getAllProducts() {
-  try {
-    // Get all product IDs
-    const productIds = await redis.smembers('products:all_ids');
-    
-    // Fetch all products
-    const products = await Promise.all(
-      productIds.map(async (id) => {
-        const data = await redis.get(`product:${id}`);
-        return typeof data === 'string' ? JSON.parse(data) : data;
-      })
-    );
-    
-    return products;
-    
-  } catch (error) {
-    console.error('Error getting products from Redis:', error.message);
-    throw error;
-  }
-}
-
-/**
  * Gets metadata about the last update
  * @returns {Promise<Object>} Metadata object
  */
@@ -116,34 +88,6 @@ export async function getUpdateMetadata() {
     
   } catch (error) {
     console.error('Error getting metadata from Redis:', error.message);
-    throw error;
-  }
-}
-
-/**
- * Clears all product data from Redis
- * @returns {Promise<void>}
- */
-export async function clearAllProducts() {
-  try {
-    const productIds = await redis.smembers('products:all_ids');
-    
-    // Delete all product keys
-    if (productIds.length > 0) {
-      await Promise.all(
-        productIds.map(id => redis.del(`product:${id}`))
-      );
-    }
-    
-    // Clear the set
-    await redis.del('products:all_ids');
-    await redis.del('products:last_update');
-    await redis.del('products:count');
-    
-    console.log('All products cleared from Redis');
-    
-  } catch (error) {
-    console.error('Error clearing products from Redis:', error.message);
     throw error;
   }
 }
